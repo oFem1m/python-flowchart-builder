@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 
 type NodeType = 'start' | 'end' | 'operation' | 'decision' | 'input' | 'output' | 'loop' | 'return';
 
@@ -21,68 +21,12 @@ interface ParsedGraph {
     edges: FlowChartEdge[];
 }
 
-const FlowChartCanvas: React.FC<{ code: string }> = ({ code }) => {
+const FlowChartCanvas: React.FC<{ parsedGraph: ParsedGraph }> = ({ parsedGraph }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const [parsedGraph, setParsedGraph] = useState<ParsedGraph>({ nodes: [], edges: [] });
 
     useEffect(() => {
-        const graph = parsePythonCodeToGraph(code);
-        setParsedGraph(graph);
-        drawFlowChart(graph);
-    }, [code]);
-
-    const parsePythonCodeToGraph = (code: string): ParsedGraph => {
-        const lines = code.split('\n');
-        const nodes: FlowChartNode[] = [];
-        const edges: FlowChartEdge[] = [];
-        let y = 50;
-        let nodeId = 0;
-
-        lines.forEach((line) => {
-            const trimmedLine = line.trim();
-            if (!trimmedLine) return;
-
-            let label = trimmedLine;
-            let type: NodeType = 'operation';
-
-            if (trimmedLine.startsWith('def')) {
-                type = 'start';
-            } else if (trimmedLine.startsWith('if') || trimmedLine.startsWith('elif')) {
-                type = 'decision';
-            } else if (trimmedLine.startsWith('else')) {
-                type = 'decision';
-            } else if (trimmedLine.startsWith('for') || trimmedLine.startsWith('while')) {
-                type = 'loop';
-            } else if (trimmedLine.startsWith('print')) {
-                type = 'output';
-            } else if (trimmedLine.startsWith('return')) {
-                type = 'return';
-            } else if (/[a-zA-Z_]\w*\s*=\s*.+/.test(trimmedLine)) {
-                type = 'operation';
-            }
-
-            const node = {
-                id: `node-${nodeId}`,
-                type,
-                label,
-                x: 50,
-                y: y,
-            };
-            nodes.push(node);
-
-            if (nodes.length > 1) {
-                edges.push({
-                    source: nodes[nodes.length - 2].id,
-                    target: node.id,
-                });
-            }
-
-            y += 80;
-            nodeId += 1;
-        });
-
-        return { nodes, edges };
-    };
+        drawFlowChart(parsedGraph);
+    }, [parsedGraph]);
 
     const drawFlowChart = (graph: ParsedGraph) => {
         const canvas = canvasRef.current;
