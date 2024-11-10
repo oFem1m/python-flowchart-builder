@@ -1,6 +1,27 @@
 import React, { useState } from 'react';
 import FlowChartCanvas from './FlowChartCanvas';
 
+type NodeType = 'start' | 'end' | 'operation' | 'decision' | 'input' | 'output' | 'loop' | 'return';
+
+interface FlowChartNode {
+    id: string;
+    type: NodeType;
+    label: string;
+    x: number;
+    y: number;
+    next?: string[];
+}
+
+interface FlowChartEdge {
+    source: string;
+    target: string;
+}
+
+interface ParsedGraph {
+    nodes: FlowChartNode[];
+    edges: FlowChartEdge[];
+}
+
 class FlowchartBuilder {
     private nodeIdCounter = 0;
     private nodes: FlowChartNode[] = [];

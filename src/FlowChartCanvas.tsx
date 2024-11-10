@@ -22,10 +22,12 @@ interface ParsedGraph {
 }
 
 const FlowChartCanvas: React.FC<{ parsedGraph: ParsedGraph }> = ({ parsedGraph }) => {
-    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
     useEffect(() => {
-        drawFlowChart(parsedGraph);
+        if (canvasRef.current) {
+            drawFlowChart(parsedGraph);
+        }
     }, [parsedGraph]);
 
     const drawFlowChart = (graph: ParsedGraph) => {
