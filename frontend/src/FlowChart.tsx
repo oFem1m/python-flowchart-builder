@@ -52,7 +52,7 @@ class FlowchartBuilder {
 
     private createNodeFromLine(line: string): FlowChartNode | null {
         let type: NodeType = 'operation';
-        let label = line;
+        const label = line;
 
         if (line.startsWith('def')) {
             type = 'start';
