@@ -1,5 +1,5 @@
 import React from 'react';
-import FlowChart from './FlowChart';
+import FlowChart from './FlowChart.tsx';
 
 const App: React.FC = () => {
     return (

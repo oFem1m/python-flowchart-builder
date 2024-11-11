@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import FlowChartCanvas from './FlowChartCanvas';
+import FlowChartCanvas from './FlowChartCanvas.tsx';
 
 type NodeType = 'start' | 'end' | 'operation' | 'decision' | 'input' | 'output' | 'loop' | 'return';
 
