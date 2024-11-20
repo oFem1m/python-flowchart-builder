@@ -1,31 +1,32 @@
-from parser import parse_python_code
-from graphviz import Digraph
+from parser import CodeTreeBuilder, tree_to_graphviz
 
 def main():
-    with open("test_file.py", "r") as file:
-        code = file.read()
-    parsed_structure = parse_python_code(code)
-    #  draw_flowchart(parsed_structure)
-    print(parsed_structure)
+    # Пример кода для анализа
+    code = """
+def sample_function(x):
+    if x > 0:
+        for i in range(x):
+            print(i)
+    else:
+        while x < 5:
+            x += 1
+    return x
+    """
 
+    # Создание дерева кода
+    builder = CodeTreeBuilder()
+    tree = builder.build_tree(code)
 
-def draw_flowchart(root_node, output_file="flowchart"):
-    dot = Digraph(comment="Python Code Flowchart")
+    # Вывод дерева
+    print("Дерево программы:")
+    print(tree)
 
-    def add_nodes_edges(node, parent_id=None):
-        node_id = str(id(node))
-        dot.node(node_id, f"{node.type}\n{node.label}")
+    # Преобразование в граф для Graphviz
+    graph = tree_to_graphviz(tree)
+    print(graph)
+    # graph.render("code_tree", format="png", cleanup=True)
+    print("Граф сохранен в 'code_tree.png'.")
 
-        if parent_id:
-            dot.edge(parent_id, node_id)
-
-        for child in node.children:
-            add_nodes_edges(child, node_id)
-
-    add_nodes_edges(root_node)
-    dot.format = "png"
-    dot.render(output_file)
-    print(f"Flowchart generated and saved as {output_file}.png")
 
 if __name__ == "__main__":
     main()
