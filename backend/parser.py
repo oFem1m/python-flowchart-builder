@@ -18,26 +18,31 @@ def parse_python_code(code):
 def process_node(tree, parent_node):
     for node in ast.iter_child_nodes(tree):
         if isinstance(node, ast.FunctionDef):
-            function_node = Node(type="function", label=node.name)
+            label = f"def {node.name}({', '.join(arg.arg for arg in node.args.args)}):"
+            function_node = Node(type="function", label=label)
             parent_node.children.append(function_node)
             process_node(node, function_node)
 
         elif isinstance(node, ast.If):
-            if_node = Node(type="if", label="if")
+            condition = ast.unparse(node.test)
+            if_node = Node(type="if", label=f"if {condition}:")
             parent_node.children.append(if_node)
             process_node_list(node.body, if_node)
             if node.orelse:
-                else_node = Node(type="else", label="else")
+                else_node = Node(type="else", label="else:")
                 parent_node.children.append(else_node)
                 process_node_list(node.orelse, else_node)
 
         elif isinstance(node, ast.For):
-            for_node = Node(type="for", label="for")
+            target = ast.unparse(node.target)
+            iter_ = ast.unparse(node.iter)
+            for_node = Node(type="for", label=f"for {target} in {iter_}:")
             parent_node.children.append(for_node)
             process_node_list(node.body, for_node)
 
         elif isinstance(node, ast.While):
-            while_node = Node(type="while", label="while")
+            condition = ast.unparse(node.test)
+            while_node = Node(type="while", label=f"while {condition}:")
             parent_node.children.append(while_node)
             process_node_list(node.body, while_node)
 
@@ -50,28 +55,32 @@ def process_node(tree, parent_node):
             parent_node.children.append(continue_node)
 
         elif isinstance(node, ast.Assign):
-            assign_node = Node(type="assign", label="assignment")
+            targets = ", ".join(ast.unparse(t) for t in node.targets)
+            value = ast.unparse(node.value)
+            assign_node = Node(type="assign", label=f"{targets} = {value}")
             parent_node.children.append(assign_node)
 
         elif isinstance(node, ast.AugAssign):
-            assign_node = Node(type="assign", label="augmented assignment")
+            target = ast.unparse(node.target)
+            op = ast.unparse(node.op)
+            value = ast.unparse(node.value)
+            assign_node = Node(type="assign", label=f"{target} {op}= {value}")
             parent_node.children.append(assign_node)
 
         elif isinstance(node, ast.Return):
-            return_node = Node(type="return", label="return")
+            value = ast.unparse(node.value) if node.value else "None"
+            return_node = Node(type="return", label=f"return {value}")
             parent_node.children.append(return_node)
 
         elif isinstance(node, ast.Expr) and isinstance(node.value, ast.Call):
-            call_node = Node(type="call", label="function call")
+            call = ast.unparse(node.value)
+            call_node = Node(type="call", label=call)
             parent_node.children.append(call_node)
 
-        elif isinstance(node, ast.Expr) and isinstance(node.value, ast.Str):
-            output_node = Node(type="output", label="output")
-            parent_node.children.append(output_node)
-
-        elif isinstance(node, ast.Expr) and isinstance(node.value, ast.Name):
-            var_node = Node(type="variable", label="variable")
-            parent_node.children.append(var_node)
+        elif isinstance(node, ast.Expr):
+            expr = ast.unparse(node.value)
+            expr_node = Node(type="expr", label=expr)
+            parent_node.children.append(expr_node)
 
 def process_node_list(nodes, parent_node):
     for node in nodes:

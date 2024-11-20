@@ -5,6 +5,7 @@ def main():
     with open("test_file.py", "r") as file:
         code = file.read()
     parsed_structure = parse_python_code(code)
+    #  draw_flowchart(parsed_structure)
     print(parsed_structure)
 
 
