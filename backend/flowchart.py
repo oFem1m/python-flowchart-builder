@@ -2,48 +2,69 @@ import tkinter as tk
 
 class FlowchartLayout:
     def __init__(self, tree):
-        self.tree = tree.children[0]  # Дерево кода
-        self.layers = []  # Слои блоков
+        self.tree = tree.children[0]  # Начинаем с первого узла после root (предполагается, что это функция)
         self.positions = {}  # Координаты каждого узла
+        self.connections = []  # Список соединений между блоками
+        self.visited = set()  # Для отслеживания узлов в DFS
+        self.grid = {}  # Используем сетку для размещения узлов: (x, y) -> узел
+        self.current_x = 0  # Горизонтальное смещение
+        self.current_y = 0  # Вертикальное смещение
+        self.level_width = 200  # Ширина уровня между узлами
+        self.vertical_spacing = 100  # Вертикальное расстояние между уровнями
 
-    def create_layers(self, node, depth=0):
-        """Разбивает дерево на слои."""
-        if len(self.layers) <= depth:
-            self.layers.append([])
-        self.layers[depth].append(node)
+    def calculate_positions(self, node, parent=None, x=0, y=0):
+        """Рекурсивный DFS для вычисления позиций узлов."""
+        if node in self.visited:
+            return
+        self.visited.add(node)
 
-        for child in node.children:
-            self.create_layers(child, depth + 1)
+        # Устанавливаем позицию текущего узла, избегая коллизий
+        while (x, y) in self.grid:
+            x += self.level_width
 
-    def calculate_positions(self, layer_height=150, block_width=150, block_spacing=50):
-        """Вычисляет позиции блоков."""
-        y = 50  # Начальная координата по вертикали
-        for depth, layer in enumerate(self.layers):
-            x = 50  # Начальная координата по горизонтали
-            for node in layer:
-                self.positions[node] = (x, y)
-                x += block_width + block_spacing
-            y += layer_height
+        self.positions[node] = (x, y)
+        self.grid[(x, y)] = node
 
-    def get_connections(self):
-        """Генерирует линии переходов между узлами."""
-        connections = []
-        for parent in self.positions:
-            for child in parent.children:
-                connections.append((self.positions[parent], self.positions[child]))
-        return connections
+        # Если есть родитель, добавляем соединение
+        if parent:
+            self.connections.append((self.positions[parent], (x, y)))
+
+        # Обрабатываем детей
+        if node.type in {"if", "while"}:
+            # Узлы с ветвлением
+            true_child = node.children[0] if node.children else None
+            false_child = node.children[1] if len(node.children) > 1 else None
+
+            if true_child:
+                self.calculate_positions(
+                    true_child, parent=node, x=x, y=y + self.vertical_spacing
+                )
+
+            if false_child:
+                # Для ветви False переходим вправо и вниз
+                false_x = x + self.level_width
+                self.calculate_positions(
+                    false_child, parent=node, x=false_x, y=y + self.vertical_spacing
+                )
+
+        else:
+            # Для остальных узлов обрабатываем детей последовательно
+            child_x = x
+            child_y = y + self.vertical_spacing
+            for child in node.children:
+                self.calculate_positions(child, parent=node, x=child_x, y=child_y)
+                child_x += self.level_width  # Сдвиг для следующего узла
 
     def layout(self):
-        """Основной метод для расчета расположения узлов."""
-        self.create_layers(self.tree)
-        self.calculate_positions()
+        """Запуск расчета позиций."""
+        self.calculate_positions(self.tree, x=self.current_x, y=self.current_y)
 
     def render(self, canvas):
         """Рисует блок-схему на холсте."""
         for node, (x, y) in self.positions.items():
             self.draw_block(canvas, node, x, y)
 
-        for start, end in self.get_connections():
+        for start, end in self.connections:
             self.draw_line(canvas, start, end)
 
     def draw_block(self, canvas, node, x, y):
