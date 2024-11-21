@@ -20,49 +20,99 @@ class CodeTreeBuilder(ast.NodeVisitor):
     def visit(self, node):
         """Обработка узла AST."""
         if isinstance(node, ast.Module):
-            return Node(type="root", label="root", children=[self.visit(stmt) for stmt in node.body])
+            # Главный корневой узел
+            root = Node(type="root", label="root")
+            previous = root
+            for stmt in node.body:
+                child = self.visit(stmt)
+                if child:
+                    previous.children.append(child)
+                    previous = child
+            return root
 
         elif isinstance(node, ast.FunctionDef):
-            return Node(
+            # Узел функции
+            func_node = Node(
                 type="function",
                 label=f"def {node.name}({', '.join(arg.arg for arg in node.args.args)}):",
-                children=[self.visit(stmt) for stmt in node.body],
             )
+            previous = func_node
+            for stmt in node.body:
+                child = self.visit(stmt)
+                if child:
+                    previous.children.append(child)
+                    previous = child
+            return func_node
 
         elif isinstance(node, ast.If):
-            children = [Node(type="if", label=f"if {self.visit(node.test)}:",
-                             children=[self.visit(stmt) for stmt in node.body])]
+            # Узел ветвления
+            branch_node = Node(type="if", label=f"if {self.visit(node.test)}:")
+            true_branch = Node(type="block", label="True branch")
+            previous = true_branch
+            for stmt in node.body:
+                child = self.visit(stmt)
+                if child:
+                    previous.children.append(child)
+                    previous = child
+
+            branch_node.children.append(true_branch)
+
             if node.orelse:
-                children.append(Node(type="else", label="else:", children=[self.visit(stmt) for stmt in node.orelse]))
-            return Node(type="branch", label="if-else", children=children)
+                false_branch = Node(type="block", label="False branch")
+                previous = false_branch
+                for stmt in node.orelse:
+                    child = self.visit(stmt)
+                    if child:
+                        previous.children.append(child)
+                        previous = child
+                branch_node.children.append(false_branch)
+
+            return branch_node
 
         elif isinstance(node, ast.While):
-            return Node(
-                type="while",
-                label=f"while {self.visit(node.test)}:",
-                children=[self.visit(stmt) for stmt in node.body],
-            )
+            # Узел цикла while
+            while_node = Node(type="while", label=f"while {self.visit(node.test)}:")
+            body = Node(type="block", label="Body")
+            previous = body
+            for stmt in node.body:
+                child = self.visit(stmt)
+                if child:
+                    previous.children.append(child)
+                    previous = child
+
+            while_node.children.append(body)
+            return while_node
 
         elif isinstance(node, ast.For):
-            return Node(
+            # Узел цикла for
+            for_node = Node(
                 type="for",
                 label=f"for {self.visit(node.target)} in {self.visit(node.iter)}:",
-                children=[self.visit(stmt) for stmt in node.body],
             )
+            body = Node(type="block", label="Body")
+            previous = body
+            for stmt in node.body:
+                child = self.visit(stmt)
+                if child:
+                    previous.children.append(child)
+                    previous = child
+
+            for_node.children.append(body)
+            return for_node
 
         elif isinstance(node, ast.Return):
-            return Node(type="return", label=f"return {self.visit(node.value)}", children=[])
+            return Node(type="return", label=f"return {self.visit(node.value)}")
 
         elif isinstance(node, ast.Assign):
             targets = ", ".join(self.visit(t) for t in node.targets)
             value = self.visit(node.value)
-            return Node(type="assign", label=f"{targets} = {value}", children=[])
+            return Node(type="assign", label=f"{targets} = {value}")
 
         elif isinstance(node, ast.AugAssign):
             target = self.visit(node.target)
             op = self.get_operator(node.op)
             value = self.visit(node.value)
-            return Node(type="aug_assign", label=f"{target} {op}= {value}", children=[])
+            return Node(type="aug_assign", label=f"{target} {op}= {value}")
 
         elif isinstance(node, ast.Expr):
             return self.visit(node.value)
@@ -70,7 +120,7 @@ class CodeTreeBuilder(ast.NodeVisitor):
         elif isinstance(node, ast.Call):
             func_name = self.visit(node.func)
             args = ", ".join(self.visit(arg) for arg in node.args)
-            return Node(type="call", label=f"{func_name}({args})", children=[])
+            return Node(type="call", label=f"{func_name}({args})")
 
         elif isinstance(node, ast.Name):
             return node.id
@@ -96,11 +146,7 @@ class CodeTreeBuilder(ast.NodeVisitor):
             return f" {op} ".join(values)
 
         else:
-            return f"<unknown {type(node).__name__}>"
-
-    def visit_list(self, nodes):
-        """Обработка списка узлов."""
-        return [self.visit(node) for node in nodes]
+            return None
 
     def get_operator(self, op):
         """Возвращает строковое представление оператора."""
