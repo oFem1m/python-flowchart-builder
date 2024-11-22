@@ -1,5 +1,5 @@
 import tkinter as tk
-from parser import CodeTreeBuilder  # Используем парсер из вашего кода
+from parser import CodeTreeBuilder
 from flowchart import FlowchartLayout
 
 
