@@ -47,57 +47,54 @@ class CodeTreeBuilder(ast.NodeVisitor):
         elif isinstance(node, ast.If):
             # Узел ветвления
             branch_node = Node(type="if", label=f"if {self.visit(node.test)}:")
-            true_branch = Node(type="block", label="True branch")
-            previous = true_branch
+            # true_branch = Node(type="block", label="True branch")
+            previous = branch_node
             for stmt in node.body:
                 child = self.visit(stmt)
                 if child:
                     previous.children.append(child)
                     previous = child
 
-            branch_node.children.append(true_branch)
 
             if node.orelse:
-                false_branch = Node(type="block", label="False branch")
-                previous = false_branch
+                # false_branch = Node(type="block", label="False branch")
+                previous = branch_node
                 for stmt in node.orelse:
                     child = self.visit(stmt)
                     if child:
                         previous.children.append(child)
                         previous = child
-                branch_node.children.append(false_branch)
 
             return branch_node
 
         elif isinstance(node, ast.While):
             # Узел цикла while
             while_node = Node(type="while", label=f"while {self.visit(node.test)}:")
-            body = Node(type="block", label="Body")
-            previous = body
+            # body = Node(type="block", label="Body")
+            previous = while_node
             for stmt in node.body:
                 child = self.visit(stmt)
                 if child:
                     previous.children.append(child)
                     previous = child
 
-            while_node.children.append(body)
+            # while_node.children.append(body)
             return while_node
 
         elif isinstance(node, ast.For):
             # Узел цикла for
             for_node = Node(
                 type="for",
-                label=f"for {self.visit(node.target)} in {self.visit(node.iter)}:",
+                label=f"for {self.visit(node.target)} in {self.visit(node.iter).label}:",
             )
-            body = Node(type="block", label="Body")
-            previous = body
+            # body = Node(type="block", label="Body")
+            previous = for_node
             for stmt in node.body:
                 child = self.visit(stmt)
                 if child:
                     previous.children.append(child)
                     previous = child
 
-            for_node.children.append(body)
             return for_node
 
         elif isinstance(node, ast.Return):

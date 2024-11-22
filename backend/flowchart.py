@@ -7,8 +7,8 @@ class FlowchartLayout:
         self.connections = []  # Список соединений между блоками
         self.visited = set()  # Для отслеживания узлов в DFS
         self.grid = {}  # Используем сетку для размещения узлов: (x, y) -> узел
-        self.current_x = 0  # Горизонтальное смещение
-        self.current_y = 0  # Вертикальное смещение
+        self.current_x = 10  # Горизонтальное смещение
+        self.current_y = 10  # Вертикальное смещение
         self.level_width = 200  # Ширина уровня между узлами
         self.vertical_spacing = 100  # Вертикальное расстояние между уровнями
 

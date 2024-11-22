@@ -5,7 +5,7 @@ from flowchart import FlowchartLayout
 
 def main():
     # Парсинг кода
-    with open("test_file1.py", "r") as file:
+    with open("test_file.py", "r") as file:
         code = file.read()
     builder = CodeTreeBuilder()
     tree = builder.build_tree(code)
