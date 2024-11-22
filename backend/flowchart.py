@@ -53,7 +53,7 @@ class FlowchartLayout:
             child_y = y + self.vertical_spacing
             for child in node.children:
                 self.calculate_positions(child, parent=node, x=child_x, y=child_y)
-                child_x += self.level_width  # Сдвиг для следующего узла
+                child_x += self.level_width
 
     def layout(self):
         """Запуск расчета позиций."""
