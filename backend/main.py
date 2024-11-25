@@ -9,7 +9,7 @@ def main():
         code = file.read()
     builder = CodeTreeBuilder()
     tree = builder.build_tree(code)
-    print(tree)
+    print("полное дерево: ", tree)
 
     # Генерация блок-схемы
     layout = FlowchartLayout(tree)
