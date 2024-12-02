@@ -1,0 +1,81 @@
+Node(id='23eef030-18db-4182-a34a-43c435b18c5c', type='root', label='root', children=
+[
+    Node(id='dc445037-962f-4680-a26a-0ff298691398', type='function', label='def power(x, n):', children=                1
+    [
+        Node(id='fd657aa5-f2fd-49b1-8d09-d69df945210c', type='assign', label='res = 1', children=[]),                   2
+        Node(id='4c79a22e-4d6a-4a00-bcb3-986352a26dc3', type='assign', label='i = 0', children=[]),                     3
+        Node(id='2bb4425c-e65c-4342-86e4-52d0458f6692', type='while', label='while i < n:', children=                   4
+        [
+            Node(id='6f3ac812-3764-46dc-a2d0-39efbd58e791', type='aug_assign', label='res *= x', children=[]),          5
+            Node(id='83b56d9f-244b-4868-b75e-7dd0af13cff9', type='aug_assign', label='i += 1', children=[])             6
+        ]),
+        Node(id='a8b607e2-82d3-4f3c-a6ca-df66ea03d7d5', type='return', label='return res', children=[])                 7
+    ])
+])
+
+[Block(id=1, type='function', label='def sample_function(x):', connections=[2]),
+Block(id=2, type='if', label='if x < 0:', connections=[3, 5]),
+Block(id=3, type='if', label='if x < 0:', connections=[4]),
+Block(id=4, type='aug_assign', label='x += 5', connections=[16]),
+Block(id=5, type='else', label='else:', connections=[6]),
+Block(id=6, type='if', label='if x == 0:', connections=[7, 12]),
+Block(id=7, type='if', label='if x == 0:', connections=[8]), Block(id=8, type='assign', label='s = 0', connections=[9]), Block(id=9, type='while', label='while s < 3:', connections=[10, 11]), Block(id=10, type='aug_assign', label='s += 1', connections=[9]), Block(id=11, type='return', label='return 0', connections=[]), Block(id=12, type='else', label='else:', connections=[13]), Block(id=13, type='for', label='for i in range(5):', connections=[14, 15]), Block(id=14, type='call', label='print(i)', connections=[13]), Block(id=15, type='aug_assign', label='x -= 5', connections=[16]), Block(id=16, type='assign', label='y = 6', connections=[17]), Block(id=17, type='return', label='return x', connections=[])]
+
+
+
+===========
+
+
+Node(id='78bf0000-c75d-4121-87d1-178dafa0fd61', type='root', label='root', children=                                         # - Блок type = root не рисуется на схеме, значит такой блок создавать не нужно
+[
+    Node(id='f2b5e80a-566c-4dcf-af89-5aa39ef79b14', type='function', label='def sample_function(x):', children=              # слой 1 - определение функции лежит на слое 1
+    [
+        Node(id='6ffd670e-eacb-4161-8bd1-e20740d46148', type='branch', label='if-else', children=                            # - блок type = branch не рисуется, следовательно, слой не увеличиваем
+        [
+            Node(id='228d6413-9dc1-43c9-8d80-5d10fae3797f', type='if', label='if x < 0:', children=                          # слой 2 - новый блок, увеличиваем слой на 1
+            [
+                Node(id='b8a2888a-cb18-4737-8d94-9a4cd33a3ef2', type='aug_assign', label='x += 5', children=[])              # слой 3 - содержимое ветки true, увеличиваем слой на 1
+            ]),
+            Node(id='34fd2086-f360-462d-a581-e79c105431dd', type='else', label='else:', children=                            # - type = else игнорируем при создании блоков
+            [
+                Node(id='fa5e0aa9-dd1b-43ab-9a65-03e1df7b7dfa', type='branch', label='if-else', children=                    # - type = branch не рисуется, следовательно, слой не увеличиваем
+                [
+                    Node(id='465e07c6-9eb5-42d5-956b-32847a0a32fd', type='if', label='if x == 0:', children=                 # слой 3 - блок является содержимым ветки false для условия на слое 2, поэтому слой тоже увеличиваем на 1
+                    [
+                        Node(id='52be00a3-5068-441a-99ea-4f1f758e574e', type='assign', label='s = 0', children=[]),          # слой 4 - содержимое ветки true, увеличиваем слой на 1
+                        Node(id='e876b955-9795-49f6-ab87-d516edcad4ac', type='while', label='while s < 3:', children=        # слой 5 - тоже содержимое той же ветки, увеличиваем слой на 1. Объявляет цикл While
+                        [
+                            Node(id='a3efb127-bb8e-4797-9833-54bde14317e6', type='aug_assign', label='s += 1', children=[])  # слой 6 - тело цикла while, увеличиваем слой на 1 относительно блока while
+                        ]),
+                        Node(id='514d0555-bc45-477d-aa6f-8d95ecbd3b00', type='return', label='return 0', children=[])        # слой 7 - блок, в который попадаем после выхода из while. Его слой больше на 1, чем самый "глубокий" элемент из цикла while.
+                    ]),
+                    Node(id='0f4ff2e4-bb77-4e7e-b6ef-dab1386f2c6e', type='else', label='else:', children=                    # -
+                    [
+                        Node(id='24bd4544-4778-4e01-a1dc-1e334c986852', type='for', label='for i in range(5):', children=    # слой 4 - блок является содержимым ветки false для условия, находящемся на слое 3, поэтому увеличиваем слой на 1 относительно родительского условия
+                        [
+                            Node(id='b1440d1d-8303-47e1-9362-e73e050e5625', type='call', label='print(i)', children=[])      # слой 5 - блок в теле цикла for, его слой больше на 1,чем слой блока определения цикла
+                        ]),
+                        Node(id='b9715ced-dcde-4e03-b97a-414cea5d8299', type='aug_assign', label='x -= 5', children=[])      # слой 6 - блок, в который попадаем после выхода из for. Его слой больше на 1, чем самый "глубокий" элемент из цикла for.
+                    ])
+                ])
+            ])
+        ]),
+        Node(id='f86a46ef-f022-4b33-a4ee-3d0e84aaf153', type='assign', label='y = 6', children=[]),                          # слой 8 - в элемент y = 6 попадаем после завершения всех условий (кроме return 0 в одном из условий ранее). Его слой определяется как слой "самого глубокого" элемента в структуре перед ним + 1. Блок return 0 лежит на слое 7 и является максимальным, поэтому получаем слой 7 + 1 = 9
+        Node(id='f65a28db-924b-42cc-a5e2-636ddec8d458', type='return', label='return x', children=[])                        # слой 9 - элемент следует за y = 6, поэтому его слой на 1 больше.
+    ])
+])
+
+[Block(id=1, type='function', label='def sample_function(x):', connections=[2]),
+Block(id=2, type='if', label='if x < 0:', connections=[3, 4]),
+Block(id=3, type='aug_assign', label='x += 5', connections=[12]),
+Block(id=4, type='if', label='if x == 0:', connections=[5, 9]),
+Block(id=5, type='assign', label='s = 0', connections=[6, 12]),
+Block(id=6, type='while', label='while s < 3:', connections=[7, 8]),
+Block(id=7, type='aug_assign', label='s += 1', connections=[6]),
+Block(id=8, type='return', label='return 0', connections=[]),
+Block(id=9, type='for', label='for i in range(5):', connections=[10, 11]),
+Block(id=10, type='call', label='print(i)', connections=[9]),
+Block(id=11, type='aug_assign', label='x -= 5', connections=[12]),
+Block(id=12, type='assign', label='y = 6', connections=[13]),
+Block(id=13, type='return', label='return x', connections=[])]
+
