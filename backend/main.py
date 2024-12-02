@@ -10,7 +10,7 @@ def main():
     builder = CodeTreeBuilder()
 
     tree = builder.build_tree(code)
-    print(tree)
+    print("полное дерево: ", tree)
 
     # Создание блоков
     blocks = build_blocks(tree)
