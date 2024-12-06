@@ -8,7 +8,7 @@ class Node:
         self.children = children if children else []
 
     def __repr__(self):
-        return f"Node(type={self.type!r}, label={self.label!r}, children={self.children})"
+        return f" {{\"type\": \"{self.type}\", \"label\": \"{self.label}\", \"children\": {str(self.children).replace('[', '[').replace(']', ']')}\n}}"
 
 
 class CodeTreeBuilder(ast.NodeVisitor):
@@ -20,7 +20,7 @@ class CodeTreeBuilder(ast.NodeVisitor):
     def visit(self, node):
         """Обработка узла AST."""
         if isinstance(node, ast.Module):
-            return Node(type="root", label="root", children=[self.visit(stmt) for stmt in node.body])
+            return self.visit(node.body[0])
 
         elif isinstance(node, ast.FunctionDef):
             return Node(
