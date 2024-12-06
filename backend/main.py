@@ -5,7 +5,7 @@ from parser import CodeTreeBuilder
 
 def main():
     # Парсинг кода
-    with open("test_file.py", "r") as file:
+    with open("test_file2.py", "r") as file:
         code = file.read()
     builder = CodeTreeBuilder()
 
