@@ -30,25 +30,25 @@ class CodeTreeBuilder(ast.NodeVisitor):
             )
 
         elif isinstance(node, ast.If):
-            children = [Node(type="if", label=f"if {self.visit(node.test).label}:",
+            children = [Node(type="if", label=f"if",
                              children=[self.visit(stmt) for stmt in node.body])]
             if node.orelse:
                 children.append(Node(type="else", label="else:", children=[self.visit(stmt) for stmt in node.orelse]))
-            return Node(type="branch", label="if-else", children=children)
+            return Node(type="branch", label=f"if {self.visit(node.test).label}:", children=children)
 
         elif isinstance(node, ast.While):
-            children = [Node(type="while", label=f"while {self.visit(node.test).label}:",
+            children = [Node(type="while", label="while",
                              children=[self.visit(stmt) for stmt in node.body])]
             if node.orelse:
                 children.append(Node(type="else", label="else:", children=[self.visit(stmt) for stmt in node.orelse]))
-            return Node(type="loop", label="while-else", children=children)
+            return Node(type="loop", label=f"while {self.visit(node.test).label}:", children=children)
 
         elif isinstance(node, ast.For):
-            children = [Node(type="for", label=f"for {self.visit(node.target).label} in {self.visit(node.iter).label}:",
+            children = [Node(type="for", label="for",
                              children=[self.visit(stmt) for stmt in node.body])]
             if node.orelse:
                 children.append(Node(type="else", label="else:", children=[self.visit(stmt) for stmt in node.orelse]))
-            return Node(type="loop", label="for-else", children=children)
+            return Node(type="loop", label=f"for {self.visit(node.target).label} in {self.visit(node.iter).label}:", children=children)
 
         elif isinstance(node, ast.Return):
             return Node(type="return", label=f"return {self.visit(node.value).label}", children=[])
