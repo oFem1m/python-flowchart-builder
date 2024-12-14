@@ -30,22 +30,21 @@ class CodeTreeBuilder(ast.NodeVisitor):
             )
 
         elif isinstance(node, ast.If):
-            children = [Node(type="if", label=f"if",
-                             children=[self.visit(stmt) for stmt in node.body])]
+            children = [Node(type="if", label="if", children=[self.visit(stmt) for stmt in node.body])]
             if node.orelse:
                 children.append(Node(type="else", label="else:", children=[self.visit(stmt) for stmt in node.orelse]))
+            else:
+                children.append(Node(type="null_else", label="else:", children=[]))
             return Node(type="branch", label=f"if {self.visit(node.test).label}:", children=children)
 
         elif isinstance(node, ast.While):
-            children = [Node(type="while", label="while",
-                             children=[self.visit(stmt) for stmt in node.body])]
+            children = [Node(type="while", label="while", children=[self.visit(stmt) for stmt in node.body])]
             if node.orelse:
                 children.append(Node(type="else", label="else:", children=[self.visit(stmt) for stmt in node.orelse]))
             return Node(type="loop", label=f"while {self.visit(node.test).label}:", children=children)
 
         elif isinstance(node, ast.For):
-            children = [Node(type="for", label="for",
-                             children=[self.visit(stmt) for stmt in node.body])]
+            children = [Node(type="for", label="for", children=[self.visit(stmt) for stmt in node.body])]
             if node.orelse:
                 children.append(Node(type="else", label="else:", children=[self.visit(stmt) for stmt in node.orelse]))
             return Node(type="loop", label=f"for {self.visit(node.target).label} in {self.visit(node.iter).label}:", children=children)
