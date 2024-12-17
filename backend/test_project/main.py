@@ -1,6 +1,4 @@
-import tkinter as tk
-from backend.block_parser import build_blocks
-from flowchart import FlowchartLayout
+from backend.trash.block_parser2 import build_blocks
 from parser import CodeTreeBuilder
 from blocks_creator import build_blocks
 
