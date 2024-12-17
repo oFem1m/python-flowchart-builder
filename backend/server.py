@@ -30,3 +30,6 @@ def parse_code(input: CodeInput):
         return ast_tree
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Parsing failed: {str(e)}")
+
+
+# uvicorn server:app --reload
