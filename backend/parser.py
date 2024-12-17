@@ -40,13 +40,13 @@ class CodeTreeBuilder(ast.NodeVisitor):
         elif isinstance(node, ast.While):
             children = [Node(type="while", label="while", children=[self.visit(stmt) for stmt in node.body])]
             if node.orelse:
-                children.append(Node(type="else", label="else:", children=[self.visit(stmt) for stmt in node.orelse]))
+                children.append(Node(type="else-loop", label="else:", children=[self.visit(stmt) for stmt in node.orelse]))
             return Node(type="loop", label=f"while {self.visit(node.test).label}:", children=children)
 
         elif isinstance(node, ast.For):
             children = [Node(type="for", label="for", children=[self.visit(stmt) for stmt in node.body])]
             if node.orelse:
-                children.append(Node(type="else", label="else:", children=[self.visit(stmt) for stmt in node.orelse]))
+                children.append(Node(type="else-loop", label="else:", children=[self.visit(stmt) for stmt in node.orelse]))
             return Node(type="loop", label=f"for {self.visit(node.target).label} in {self.visit(node.iter).label}:", children=children)
 
         elif isinstance(node, ast.Return):
