@@ -592,8 +592,10 @@ function toBlockNode(obj: Node, prev: Node | undefined, next: Node | undefined, 
                 break;
             }
             if (parent.blockNode) box.setFromObject(parent.blockNode);
-            if (parent.type != "loop") obj.blockNode?.addNode(next.blockNode, box, perimLine.S, scene);
-            else obj.blockNode?.addNode(parent.blockNode, box, perimLine.LNR, scene);
+            //if (parent.type != "loop")
+            obj.blockNode?.addNode(next.blockNode, box, perimLine.S, scene);
+            //else obj.blockNode?.addNode(parent.blockNode, box, perimLine.LNR, scene);
+
 
             break;
         case "return":

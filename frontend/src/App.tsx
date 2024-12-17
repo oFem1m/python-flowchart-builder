@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import FlowChart from './FlowChart';
 
 const App: React.FC = () => {
@@ -10,8 +10,8 @@ const App: React.FC = () => {
         try {
             const response = await fetch('http://localhost:8000/parse/', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code }),
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({code}),
             });
             const data = await response.json();
             setParsedData(data);
