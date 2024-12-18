@@ -330,8 +330,9 @@ function addSize(obj: Node) {
 
     if (obj.text_mesh?.geometry.boundingBox) bbox.copy(obj.text_mesh?.geometry.boundingBox);
     if (bbox && bbox.min.x != Infinity && is_skip) {
-        obj.width = bbox.max.x - bbox.min.x
-        obj.height = (bbox.max.y - bbox.min.y)
+        _box.setFromObject(generateShapeMesh(bbox.clone(),2,new Color(),obj.type));
+        obj.width = (_box.max.x - _box.min.x)
+        obj.height = (_box.max.y - _box.min.y)
     }
 
     if (Array.isArray(obj.children)) {
