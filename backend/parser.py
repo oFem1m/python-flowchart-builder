@@ -8,7 +8,7 @@ class Node:
         self.children = children if children else []
 
     def __repr__(self):
-        return f" {{\"type\": \"{self.type}\", \"label\": \"{self.label}\", \"children\": {str(self.children).replace('[', '[').replace(']', ']')}\n}}"
+        return f"{{\"type\": \"{self.type}\", \"label\": \"{self.label}\", \"children\": {str(self.children).replace('[', '[').replace(']', ']')}}}"
 
 
 class CodeTreeBuilder(ast.NodeVisitor):
@@ -81,11 +81,27 @@ class CodeTreeBuilder(ast.NodeVisitor):
             args = ", ".join(self.visit(arg).label for arg in node.args)
             return Node(type="call", label=f"{func_name}({args})", children=[])
 
+        elif isinstance(node, ast.Attribute):
+            value = self.visit(node.value).label
+            return Node(type="attribute", label=f"{value}.{node.attr}", children=[])
+
         elif isinstance(node, ast.Name):
             return Node(type="name", label=node.id, children=[])
 
         elif isinstance(node, ast.Constant):
             return Node(type="constant", label=repr(node.value), children=[])
+
+        elif isinstance(node, ast.List):
+            elements = [self.visit(e).label for e in node.elts]
+            return Node(type="list", label=f"[{', '.join(elements)}]", children=[])
+
+        elif isinstance(node, ast.UnaryOp):
+            if isinstance(node.op, ast.USub):
+                operand = self.visit(node.operand)
+                if isinstance(node.operand, ast.Constant) and isinstance(node.operand.value, (int, float)):
+                    return Node(type="constant", label=repr(-node.operand.value), children=[])
+                return Node(type="unaryop", label=f"-{operand.label}", children=[])
+            return Node(type="unaryop", label=f"<{type(node.op).__name__}>", children=[])
 
         elif isinstance(node, ast.BinOp):
             left = self.visit(node.left).label
