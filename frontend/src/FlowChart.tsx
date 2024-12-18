@@ -21,7 +21,7 @@ interface FlowChartProps {
 
 const skipType = ["if", "while", "for", "continue", "break", "else", "else-loop"];
 const skipOutput = ["continue", "break", "else", "else-loop"];
-const nullType = ["null_else"]
+const nullType = ["null_else", "null"]
 const a = 40;
 const _vec3 = new Vector3()
 const _box = new Box3()
@@ -522,7 +522,7 @@ function toBlockNode(obj: Node, prev: Node | undefined, next: Node | undefined, 
             case "loop":
                 if (prev != obj.parent) {
                     bbox.setFromObject(prev.blockNode);
-                    prev.blockNode.addNode(obj.blockNode, bbox, perimLine.RSL, scene);
+                    // prev.blockNode.addNode(obj.blockNode, bbox, perimLine.RSL, scene);
                 } else {
                     prev.blockNode.addNode(obj.blockNode, bbox, perimLine.S, scene);
                 }
@@ -536,7 +536,7 @@ function toBlockNode(obj: Node, prev: Node | undefined, next: Node | undefined, 
             case "branch":
                 if (prev?.blockNode != undefined && prev.blockNode.rect) bbox.setFromObject(prev.blockNode.rect);
                 if (obj.type == "null_else") prev.blockNode.addNode(obj.blockNode, bbox, perimLine.RS, scene);
-                else prev.blockNode.addNode(obj.blockNode, bbox, perimLine.LS, scene);
+                else prev.blockNode.addNode(obj.blockNode, bbox, perimLine.S, scene, 0x00ff00);
                 break;
             // case "if":
             //   if (prev.parent?.blockNode !=undefined  && prev.parent.blockNode.rect) bbox.setFromObject(prev.parent.blockNode.rect);
@@ -569,7 +569,7 @@ function toBlockNode(obj: Node, prev: Node | undefined, next: Node | undefined, 
 
             }
             parent = parent.parent;
-            if (parent == undefined || !parent.blockNode || !boxParent?.blockNode) {
+            if (parent == undefined || !parent.blockNode || !boxParent2?.blockNode) {
                 console.log("continue error")
                 return
             }
@@ -580,23 +580,25 @@ function toBlockNode(obj: Node, prev: Node | undefined, next: Node | undefined, 
             obj.blockNode?.addNode(parent.blockNode, box, perimLine.LNR, scene);
             break;
         case "break":
-            if (parent == undefined || !parent.blockNode || next == undefined || !next.blockNode || next.parent == obj.parent || obj.children.length !== 0) {
-                break;
-            }
+            let boxParent2 = obj;
 
-            while (parent?.parent && parent.parent != next.parent) {
+            while (parent?.parent && parent.type != "while" && parent.type != "for") {
+                boxParent = parent;
                 parent = parent.parent;
+
             }
-            if (parent == undefined || !parent.blockNode || next == undefined || !next.blockNode || next.parent == obj.parent || obj.children.length !== 0) {
-                console.log("default error")
-                break;
+            parent = parent.parent;
+            const root = parent.parent;
+            const parent_sister = root.children[root.children.find(parent+1)];
+            if (parent == undefined || !parent.blockNode || !boxParent?.blockNode) {
+                console.log("continue error")
+                return
             }
+
+            _box.setFromObject(boxParent2.blockNode);
             if (parent.blockNode) box.setFromObject(parent.blockNode);
-            //if (parent.type != "loop")
-            obj.blockNode?.addNode(next.blockNode, box, perimLine.S, scene);
-            //else obj.blockNode?.addNode(parent.blockNode, box, perimLine.LNR, scene);
-
-
+            box.min.y = _box.min.y
+            obj.blockNode?.addNode(parent.blockNode, box, perimLine.LNR, scene);
             break;
         case "return":
             break;
