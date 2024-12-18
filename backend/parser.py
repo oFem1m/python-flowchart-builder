@@ -8,7 +8,7 @@ class Node:
         self.children = children if children else []
 
     def __repr__(self):
-        return f"{{\"type\": \"{self.type}\", \"label\": \"{self.label}\", \"children\": {str(self.children).replace('[', '[').replace(']', ']')}}}"
+        return f" {{\"type\": \"{self.type}\", \"label\": \"{self.label}\", \"children\": {str(self.children).replace('[', '[').replace(']', ']')}\n}}"
 
 
 class CodeTreeBuilder(ast.NodeVisitor):
