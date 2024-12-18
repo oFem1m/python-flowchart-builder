@@ -105,7 +105,7 @@ class CodeTreeBuilder(ast.NodeVisitor):
             return Node(type="boolop", label=f" {op} ".join(values), children=[])
 
         else:
-            return Node(type="unknown", label=f"<unknown {type(node).__name__}>", children=[])
+            return Node(type="unknown", label=f"<{type(node).__name__}>", children=[])
 
     def get_operator(self, op):
         """Возвращает строковое представление оператора."""

@@ -47,6 +47,7 @@ interface Node {
     width?: number;
     height?: number;
     parent?: Node;
+    next?: Node;
     blockNode?: BlockNode;
     children: Node[];
 }
@@ -512,6 +513,9 @@ function toBlockNode(obj: Node, prev: Node | undefined, next: Node | undefined, 
     if (obj === null || obj === undefined) {
         return;
     }
+    if (next !== undefined){
+        obj.next = next;
+    }
     const firstNode = obj;
     if (prev !== undefined && prev.blockNode && obj.blockNode && obj.parent && obj.text_mesh?.geometry.boundingBox !== undefined
         && obj.text_mesh?.geometry.boundingBox?.min !== undefined
@@ -569,7 +573,7 @@ function toBlockNode(obj: Node, prev: Node | undefined, next: Node | undefined, 
 
             }
             parent = parent.parent;
-            if (parent == undefined || !parent.blockNode || !boxParent2?.blockNode) {
+            if (parent == undefined || !parent.blockNode || !boxParent?.blockNode) {
                 console.log("continue error")
                 return
             }
@@ -580,25 +584,20 @@ function toBlockNode(obj: Node, prev: Node | undefined, next: Node | undefined, 
             obj.blockNode?.addNode(parent.blockNode, box, perimLine.LNR, scene);
             break;
         case "break":
-            let boxParent2 = obj;
-
+            let _boxParent = obj;
             while (parent?.parent && parent.type != "while" && parent.type != "for") {
-                boxParent = parent;
+                _boxParent = parent;
                 parent = parent.parent;
-
             }
-            parent = parent.parent;
-            const root = parent.parent;
-            const parent_sister = root.children[root.children.find(parent+1)];
-            if (parent == undefined || !parent.blockNode || !boxParent?.blockNode) {
+            if (parent?.parent) parent = parent.parent;
+            if (parent == undefined || !parent.blockNode || parent.next == undefined || !_boxParent?.blockNode || !parent.next?.blockNode) {
                 console.log("continue error")
                 return
             }
-
-            _box.setFromObject(boxParent2.blockNode);
+            _box.setFromObject(_boxParent.blockNode);
             if (parent.blockNode) box.setFromObject(parent.blockNode);
             box.min.y = _box.min.y
-            obj.blockNode?.addNode(parent.blockNode, box, perimLine.LNR, scene);
+            obj.blockNode?.addNode(parent.next?.blockNode, box, perimLine.S, scene);
             break;
         case "return":
             break;
