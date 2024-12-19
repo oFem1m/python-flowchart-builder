@@ -1,5 +1,5 @@
-import {useRef, useEffect} from 'react';
-import {Text, configureTextBuilder, BatchedText} from 'troika-three-text'
+import { useRef, useEffect } from 'react';
+import { Text, configureTextBuilder, BatchedText } from 'troika-three-text'
 import * as THREE from 'three';
 import {
     Box3,
@@ -13,14 +13,14 @@ import {
     BufferGeometry,
     LineBasicMaterial
 } from 'three';
-import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls.js';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 interface FlowChartProps {
     parsedData: any;
 }
 
 const skipType = ["if", "while", "for", "continue", "break", "else", "else-loop"];
-const skipOutput = ["continue", "break", "else", "else-loop"];
+const skipOutput = ["if", "while", "for", "continue", "break", "else", "else-loop"];
 const nullType = ["null_else", "null"]
 const a = 40;
 const _vec3 = new Vector3()
@@ -51,7 +51,11 @@ interface Node {
     blockNode?: BlockNode;
     children: Node[];
 }
-
+function nearestPoint(p: Vector3, box: Box3) {
+    const d1 = p.clone().sub(box.min).length()
+    const d2 = p.clone().sub(box.max).length()
+    return d1 > d2 ? box.min.clone() : box.max.clone();
+}
 class BlockNode extends Group {
     isBlockNode: boolean = true;
     text_mesh: Text | undefined;
@@ -63,12 +67,12 @@ class BlockNode extends Group {
     rect: THREE.Object3D | undefined;
     lines !: { arg0: BlockNode, arg1: CubicBezierCurve3, is_input: boolean, line: Line }[];
 
-    constructor(node: Node, input: Vector3, output: Vector3, visible: boolean) {
+    constructor(node: Node, input: Vector3, output: Vector3) {
         super();
         if (!node.text_mesh) return;
         const bbox = node.text_mesh.geometry.boundingBox;
         if (bbox) {
-            if (visible) {
+            if (!skipType.includes(node.type) && !nullType.includes(node.type)) {
 
                 const rect1 = generateShapeMesh(bbox.clone(), 2, new Color(0xf0f0f0), node.type)
                 rect1.position.add(node.text_mesh.position).add(_vec3.set(0, 0, -1))
@@ -90,6 +94,13 @@ class BlockNode extends Group {
                 }
                 this.add(node.text_mesh);
 
+            } else if (nullType.includes(node.type)) {
+                const rect1 = generateShapeMesh(bbox.clone(), 2, new Color(0xf0f0f0), node.type)
+                rect1.position.add(node.text_mesh.position).add(_vec3.set(0, 0, -1))
+                this.rect = rect1;
+                this.add(rect1);
+                this.rect.visible = false;
+                node.text_mesh.visible = false;
             } else {
                 node.text_mesh.visible = false;
             }
@@ -110,10 +121,9 @@ class BlockNode extends Group {
         const _baseColor = 0x000000;
         const randomColor = new Color(baseColor);
         if (baseColor == 0x000000) {
-            randomColor.r = (Math.random());
-            randomColor.g = (Math.random());
-            if (randomColor.b < 0.1) randomColor.b = 1 - randomColor.b
-            randomColor.b = (Math.random());
+            randomColor.r = Math.random() * 0.6 + 0.3; // ограничить значение между 0.3 и 1
+            randomColor.g = Math.random() * 0.6 + 0.3;
+            randomColor.b = Math.random() * 0.6 + 0.3;
         }
         const size = 1 + Math.random() * 0.5 - 0.05
         switch (perimType) {
@@ -123,12 +133,28 @@ class BlockNode extends Group {
                 } else {
                     output.add(_vec3.set(0, this.output.y, 0));
                 }
+
                 points.push(this.output.clone());
                 points.push(output.clone());
                 points.push(_vec3.set(output.x, (output.y + node.input.y) / 2, 0).clone());
-                points.push(_vec3.set(node.input.x, (output.y + node.input.y) / 2, 0).clone());
-                points.push(node.input.clone());
-                //curve.copy(new CubicBezierCurve3(output, output.clone().add(_vec3.set(0, -this.ao, 0)), node.input.clone().add(_vec3.set(0, node.ai, 0)), node.input))
+                const pre_last = _vec3.set(node.input.x, (output.y + node.input.y) / 2, 0).clone();
+                points.push(pre_last);
+                const interBox = new Box3();
+                if (node.rect && node.nodeType && !nullType.includes(node.nodeType)) {
+                    interBox.setFromObject(node.rect)
+                    const last = new Vector3().set(pre_last.x, interBox.max.y, pre_last.z)
+                    const arrowLength = 10;
+                    const arrowDirection = new Vector3().subVectors(pre_last, last).normalize();
+                    const arrowTip1 = new Vector3().addVectors(last, arrowDirection.clone().multiplyScalar(arrowLength / 2).applyAxisAngle(new Vector3(0, 0, 1), Math.PI / 4));
+                    const arrowTip2 = new Vector3().addVectors(last, arrowDirection.clone().multiplyScalar(arrowLength / 2).applyAxisAngle(new Vector3(0, 0, 1), -Math.PI / 4));
+                    points.push(last);
+                    points.push(arrowTip1);
+                    points.push(last);
+                    points.push(arrowTip2);
+                    points.push(last);
+                } else {
+                    points.push(node.input.clone())
+                }
                 break;
             case perimLine.RS:
                 randomColor.set(1, 0, 0)
@@ -140,9 +166,24 @@ class BlockNode extends Group {
                 points.push(this.output.clone());
                 points.push(output.clone());
                 points.push(_vec3.set(output.x, (output.y + node.input.y) / 2, 0).clone());
-                points.push(_vec3.set(node.input.x, (output.y + node.input.y) / 2, 0).clone());
-                points.push(node.input.clone());
-                //curve.copy(new CubicBezierCurve3(output, output.clone().add(_vec3.set(0, -this.ao, 0)), node.input.clone().add(_vec3.set(0, node.ai, 0)), node.input))
+                const pre_last_RS = _vec3.set(node.input.x, (output.y + node.input.y) / 2, 0).clone();
+                points.push(pre_last_RS);
+                const interBox_RS = new Box3();
+                if (node.rect && node.nodeType && !nullType.includes(node.nodeType)) {
+                    interBox_RS.setFromObject(node.rect)
+                    const last_RS = new Vector3().set(pre_last_RS.x, interBox_RS.max.y, pre_last_RS.z)
+                    const arrowLength_RS = 10;
+                    const arrowDirection_RS = new Vector3().subVectors(pre_last_RS, last_RS).normalize();
+                    const arrowTip1_RS = new Vector3().addVectors(last_RS, arrowDirection_RS.clone().multiplyScalar(arrowLength_RS / 2).applyAxisAngle(new Vector3(0, 0, 1), Math.PI / 4));
+                    const arrowTip2_RS = new Vector3().addVectors(last_RS, arrowDirection_RS.clone().multiplyScalar(arrowLength_RS / 2).applyAxisAngle(new Vector3(0, 0, 1), -Math.PI / 4));
+                    points.push(last_RS);
+                    points.push(arrowTip1_RS);
+                    points.push(last_RS);
+                    points.push(arrowTip2_RS);
+                    points.push(last_RS);
+                } else {
+                    points.push(node.input.clone())
+                }
                 break;
             case perimLine.LS:
                 randomColor.set(0, 1, 0)
@@ -154,9 +195,24 @@ class BlockNode extends Group {
                 points.push(this.input.clone());
                 points.push(output.clone());
                 points.push(_vec3.set(output.x, (output.y + node.input.y) / 2, 0).clone());
-                points.push(_vec3.set(node.input.x, (output.y + node.input.y) / 2, 0).clone());
-                points.push(node.input.clone());
-                //curve.copy(new CubicBezierCurve3(output, output.clone().add(_vec3.set(0, -this.ao, 0)), node.input.clone().add(_vec3.set(0, node.ai, 0)), node.input))
+                const pre_last_LS = _vec3.set(node.input.x, (output.y + node.input.y) / 2, 0).clone();
+                points.push(pre_last_LS);
+                const interBox_LS = new Box3();
+                if (node.rect && node.nodeType && !nullType.includes(node.nodeType)) {
+                    interBox_LS.setFromObject(node.rect)
+                    const last_LS = new Vector3().set(pre_last_LS.x, interBox_LS.max.y, pre_last_LS.z)
+                    const arrowLength_LS = 10;
+                    const arrowDirection_LS = new Vector3().subVectors(pre_last_LS, last_LS).normalize();
+                    const arrowTip1_LS = new Vector3().addVectors(last_LS, arrowDirection_LS.clone().multiplyScalar(arrowLength_LS / 2).applyAxisAngle(new Vector3(0, 0, 1), Math.PI / 4));
+                    const arrowTip2_LS = new Vector3().addVectors(last_LS, arrowDirection_LS.clone().multiplyScalar(arrowLength_LS / 2).applyAxisAngle(new Vector3(0, 0, 1), -Math.PI / 4));
+                    points.push(last_LS);
+                    points.push(arrowTip1_LS);
+                    points.push(last_LS);
+                    points.push(arrowTip2_LS);
+                    points.push(last_LS);
+                } else {
+                    points.push(node.input.clone())
+                }
                 break;
             case perimLine.LNR:
                 if (box.min.y != Infinity) {
@@ -170,11 +226,24 @@ class BlockNode extends Group {
                     _vec3.set(box.min.x - this.ao * 2 * size, node.input.y, 0).clone(),
                 );
                 points.push(output.clone());
-                //points.push(_vec3.set(output.x, (output.y+node.input.y)/2, 0).clone());
-                //points.push(_vec3.set(node.input.x, (output.y+node.input.y)/2, 0).clone());
-                points.push(node.input.clone());
-                //curve.copy(new CubicBezierCurve3(output, output.clone().add(_vec3.set(+this.ao, 0, 0)), node.input.clone().add(_vec3.set(0, node.ai, 0)), node.input))
-                //points.push(...curve.getPoints(50));
+                const pre_last_LNR = output.clone();
+                points.push(pre_last_LNR);
+                const interBox_LNR = new Box3();
+                if (node.rect && node.nodeType && !nullType.includes(node.nodeType)) {
+                    interBox_LNR.setFromObject(node.rect)
+                    const last_LNR = new Vector3().set(interBox_LNR.min.x, pre_last_LNR.y, pre_last_LNR.z)
+                    const arrowLength_LNR = 10;
+                    const arrowDirection_LNR = new Vector3().subVectors(pre_last_LNR, last_LNR).normalize();
+                    const arrowTip1_LNR = new Vector3().addVectors(last_LNR, arrowDirection_LNR.clone().multiplyScalar(arrowLength_LNR / 2).applyAxisAngle(new Vector3(0, 0, 1), Math.PI / 4));
+                    const arrowTip2_LNR = new Vector3().addVectors(last_LNR, arrowDirection_LNR.clone().multiplyScalar(arrowLength_LNR / 2).applyAxisAngle(new Vector3(0, 0, 1), -Math.PI / 4));
+                    points.push(last_LNR);
+                    points.push(arrowTip1_LNR);
+                    points.push(last_LNR);
+                    points.push(arrowTip2_LNR);
+                    points.push(last_LNR);
+                } else {
+                    points.push(node.input.clone())
+                }
                 break;
             case perimLine.RSL:
                 if (box.min.y != Infinity) {
@@ -188,22 +257,38 @@ class BlockNode extends Group {
                     _vec3.set(box.max.x + this.ao, box.min.y - this.ao, 0).clone(),
                 );
                 points.push(output.clone());
-                points.push(_vec3.set(output.x, (output.y + node.input.y) / 2, 0).clone());
-                points.push(_vec3.set(node.input.x, (output.y + node.input.y) / 2, 0).clone());
-                points.push(node.input.clone());
+                const pre_last_RSL = _vec3.set(node.input.x, (output.y + node.input.y) / 2, 0).clone();
+                points.push(pre_last_RSL);
+                const interBox_RSL = new Box3();
+                if (node.rect && node.nodeType && !nullType.includes(node.nodeType)) {
+                    interBox_RSL.setFromObject(node.rect)
+                    const last_RSL = new Vector3().set(pre_last_RSL.x, interBox_RSL.max.y, pre_last_RSL.z)
+                    const arrowLength_RSL = 10;
+                    const arrowDirection_RSL = new Vector3().subVectors(pre_last_RSL, last_RSL).normalize();
+                    const arrowTip1_RSL = new Vector3().addVectors(last_RSL, arrowDirection_RSL.clone().multiplyScalar(arrowLength_RSL / 2).applyAxisAngle(new Vector3(0, 0, 1), Math.PI / 4));
+                    const arrowTip2_RSL = new Vector3().addVectors(last_RSL, arrowDirection_RSL.clone().multiplyScalar(arrowLength_RSL / 2).applyAxisAngle(new Vector3(0, 0, 1), -Math.PI / 4));
+                    points.push(last_RSL);
+                    points.push(arrowTip1_RSL);
+                    points.push(last_RSL);
+                    points.push(arrowTip2_RSL);
+                    points.push(last_RSL);
+                } else {
+                    points.push(node.input.clone())
+                }
                 break;
         }
+
 
         // Создайте линию
         const geometry = new BufferGeometry().setFromPoints(points);
 
-        const material = new LineBasicMaterial({color: randomColor});
+        const material = new LineBasicMaterial({ color: randomColor });
         const line = new Line(geometry, material);
         line.position.add(_vec3.set(0, 0, -3).clone())
         scene.add(line);
 
-        this.lines.push({arg0: node, arg1: curve, is_input: true, line});
-        node.lines.push({arg0: this, arg1: curve, is_input: false, line});
+        this.lines.push({ arg0: node, arg1: curve, is_input: true, line });
+        node.lines.push({ arg0: this, arg1: curve, is_input: false, line });
     }
 
     addNodeloop(node: BlockNode, box1: Box3, box2: Box3, _size: number, perimType: perimLine, scene: THREE.Scene) {
@@ -224,12 +309,26 @@ class BlockNode extends Group {
                 } else {
                     output.add(_vec3.set(0, this.output.y, 0));
                 }
-                //points.push(this.output.clone());
                 points.push(output.clone());
                 points.push(_vec3.set(output.x, (output.y + node.input.y) / 2, 0).clone());
-                points.push(_vec3.set(node.input.x, (output.y + node.input.y) / 2, 0).clone());
-                points.push(node.input.clone());
-                //curve.copy(new CubicBezierCurve3(output, output.clone().add(_vec3.set(0, -this.ao, 0)), node.input.clone().add(_vec3.set(0, node.ai, 0)), node.input))
+                const pre_last = _vec3.set(node.input.x, (output.y + node.input.y) / 2, 0).clone();
+                points.push(pre_last);
+                const interBox = new Box3();
+                if (node.rect && node.nodeType && !nullType.includes(node.nodeType)) {
+                    interBox.setFromObject(node.rect)
+                    const last = new Vector3().set(pre_last.x, interBox.max.y, pre_last.z)
+                    const arrowLength = 10;
+                    const arrowDirection = new Vector3().subVectors(pre_last, last).normalize();
+                    const arrowTip1 = new Vector3().addVectors(last, arrowDirection.clone().multiplyScalar(arrowLength / 2).applyAxisAngle(new Vector3(0, 0, 1), Math.PI / 4));
+                    const arrowTip2 = new Vector3().addVectors(last, arrowDirection.clone().multiplyScalar(arrowLength / 2).applyAxisAngle(new Vector3(0, 0, 1), -Math.PI / 4));
+                    points.push(last);
+                    points.push(arrowTip1);
+                    points.push(last);
+                    points.push(arrowTip2);
+                    points.push(last);
+                } else {
+                    points.push(node.input.clone())
+                }
                 break;
             case perimLine.LNR:
                 if (box2.min.y != Infinity) {
@@ -243,13 +342,27 @@ class BlockNode extends Group {
                     _vec3.set(box2.min.x - this.ao * 2 * size, node.input.y, 0).clone(),
                 );
                 points.push(output.clone());
-                //points.push(_vec3.set(output.x, (output.y+node.input.y)/2, 0).clone());
-                //points.push(_vec3.set(node.input.x, (output.y+node.input.y)/2, 0).clone());
-                points.push(node.input.clone());
-                //curve.copy(new CubicBezierCurve3(output, output.clone().add(_vec3.set(+this.ao, 0, 0)), node.input.clone().add(_vec3.set(0, node.ai, 0)), node.input))
-                //points.push(...curve.getPoints(50));
+                const pre_last_LNR = _vec3.set(node.input.x, output.y, 0).clone();
+                points.push(pre_last_LNR);
+                const interBox_LNR = new Box3();
+                if (node.rect && node.nodeType && !nullType.includes(node.nodeType)) {
+                    interBox_LNR.setFromObject(node.rect)
+                    const last_LNR = new Vector3().set(pre_last_LNR.x, interBox_LNR.max.y, pre_last_LNR.z)
+                    const arrowLength_LNR = 10;
+                    const arrowDirection_LNR = new Vector3().subVectors(pre_last_LNR, last_LNR).normalize();
+                    const arrowTip1_LNR = new Vector3().addVectors(last_LNR, arrowDirection_LNR.clone().multiplyScalar(arrowLength_LNR / 2).applyAxisAngle(new Vector3(0, 0, 1), Math.PI / 4));
+                    const arrowTip2_LNR = new Vector3().addVectors(last_LNR, arrowDirection_LNR.clone().multiplyScalar(arrowLength_LNR / 2).applyAxisAngle(new Vector3(0, 0, 1), -Math.PI / 4));
+                    points.push(last_LNR);
+                    points.push(arrowTip1_LNR);
+                    points.push(last_LNR);
+                    points.push(arrowTip2_LNR);
+                    points.push(last_LNR);
+                } else {
+                    points.push(node.input.clone())
+                }
                 break;
         }
+
 
 
         // Создайте линию
@@ -259,13 +372,13 @@ class BlockNode extends Group {
         randomColor.r = (Math.random());
         randomColor.g = (Math.random());
         randomColor.b = (Math.random());
-        const material = new LineBasicMaterial({color: randomColor});
+        const material = new LineBasicMaterial({ color: randomColor });
         const line = new Line(geometry, material);
         line.position.add(_vec3.set(0, 0, -3).clone())
         scene.add(line);
 
-        this.lines.push({arg0: node, arg1: curve, is_input: true, line});
-        node.lines.push({arg0: this, arg1: curve, is_input: false, line});
+        this.lines.push({ arg0: node, arg1: curve, is_input: true, line });
+        node.lines.push({ arg0: this, arg1: curve, is_input: false, line });
 
     }
 
@@ -329,8 +442,9 @@ function addSize(obj: Node) {
     if (!skipType.includes(obj.type)) is_skip = true;
 
     if (obj.text_mesh?.geometry.boundingBox) bbox.copy(obj.text_mesh?.geometry.boundingBox);
+
     if (bbox && bbox.min.x != Infinity && is_skip) {
-        _box.setFromObject(generateShapeMesh(bbox.clone(),2,new Color(),obj.type));
+        _box.setFromObject(generateShapeMesh(bbox.clone(), 2, new Color(), obj.type));
         obj.width = (_box.max.x - _box.min.x)
         obj.height = (_box.max.y - _box.min.y)
     }
@@ -484,7 +598,7 @@ function generateShapeMesh(box: Box3, side: number, color: Color, type: string) 
     }
 
     const geometry = new THREE.ShapeGeometry(shape);
-    const material = new THREE.MeshBasicMaterial({color: color});
+    const material = new THREE.MeshBasicMaterial({ color: color });
     const mesh = new THREE.Mesh(geometry, material);
     mesh.position.add(_vec3.set(0, 0, -0.1).clone())
     return mesh;
@@ -514,7 +628,7 @@ function toBlockNode(obj: Node, prev: Node | undefined, next: Node | undefined, 
     if (obj === null || obj === undefined) {
         return;
     }
-    if (next !== undefined){
+    if (next !== undefined) {
         obj.next = next;
     }
     const firstNode = obj;
@@ -573,7 +687,7 @@ function toBlockNode(obj: Node, prev: Node | undefined, next: Node | undefined, 
                 parent = parent.parent;
 
             }
-            parent = parent.parent;
+            if (parent?.parent) parent = parent.parent;
             if (parent == undefined || !parent.blockNode || !boxParent?.blockNode) {
                 console.log("continue error")
                 return
@@ -625,8 +739,8 @@ function toBlockNode(obj: Node, prev: Node | undefined, next: Node | undefined, 
             }
             if (parent.blockNode) box.setFromObject(parent.blockNode);
             _box.setFromObject(obj.blockNode);
-            if (parent.type != "loop") obj.blockNode?.addNodeloop(next.blockNode, _box, box, size, perimLine.S, scene);
-            else obj.blockNode?.addNodeloop(parent.blockNode, _box, box, size, perimLine.LNR, scene);
+            if (parent.type == "loop") obj.blockNode?.addNodeloop(next.blockNode, _box, box, size, perimLine.LNR, scene);
+            //else obj.blockNode?.addNodeloop(parent.blockNode, _box, box, size, perimLine.LNR, scene);
             break;
         default:
             if (parent == undefined || !parent.blockNode || next == undefined || !next.blockNode || next.parent == obj.parent || obj.children.length !== 0) {
@@ -706,8 +820,8 @@ function setBlockNode(obj: Node) {
     const center = _vec3.addVectors(bbox?.min, bbox?.max).clone().multiplyScalar(0.5)
     center.add(position);
 
-    if (skipType.includes(obj.type) || nullType.includes(obj.type)) obj.blockNode = new BlockNode(obj, center, center, false);
-    else obj.blockNode = new BlockNode(obj, center, center, true);
+    obj.blockNode = new BlockNode(obj, center, center);
+
 
 
     if (Array.isArray(obj.children)) {
@@ -762,7 +876,7 @@ function senSkipNode(obj: Node, prev: Node | undefined,) {
 
 }
 
-function FlowChart({parsedData}: FlowChartProps) {
+function FlowChart({ parsedData }: FlowChartProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const sceneRef = useRef<THREE.Scene | null>(null);
     const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
@@ -784,7 +898,7 @@ function FlowChart({parsedData}: FlowChartProps) {
             const scene = new THREE.Scene();
             scene.background = new Color(0x444444);
 
-            const renderer = new THREE.WebGLRenderer({antialias: true, canvas: canvasRef.current!});
+            const renderer = new THREE.WebGLRenderer({ antialias: true, canvas: canvasRef.current! });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(window.devicePixelRatio);
 
@@ -796,7 +910,7 @@ function FlowChart({parsedData}: FlowChartProps) {
             rendererRef.current = renderer;
             controlsRef.current = controls;
 
-            return {camera, scene, renderer};
+            return { camera, scene, renderer };
         };
 
         // Очистка предыдущей сцены перед отрисовкой новой
@@ -809,16 +923,16 @@ function FlowChart({parsedData}: FlowChartProps) {
         };
 
         const renderFlowChart = (data: any) => {
-            const {scene, renderer, camera} = initScene();
+            const { scene, renderer, camera } = initScene();
             const bantch = new BatchedText();
 
-            configureTextBuilder({useWorker: false});
+            configureTextBuilder({ useWorker: false });
 
             addText_mesh(data, bantch);
             bantch.sync(() => {
                 addSize(data);
                 textMove(data, -100, 100);
-                addBox(data, bantch);
+                //addBox(data, bantch);
                 setBlockNode(data);
                 senSkipNode(data);
                 if (data.blockNode) scene.add(data.blockNode);
@@ -839,7 +953,7 @@ function FlowChart({parsedData}: FlowChartProps) {
     }, [parsedData]); // Запускаем эффект при изменении parsedData
 
     return (
-        <div style={{width: '100%', height: '100%', overflow: 'hidden'}}>
+        <div style={{ width: '100%', height: '100%', overflow: 'hidden' }}>
             <canvas
                 ref={canvasRef}
                 style={{

@@ -60,7 +60,14 @@ class CodeTreeBuilder(ast.NodeVisitor):
             return Node(type="continue", label="continue", children=[])
 
         elif isinstance(node, ast.Return):
-            return Node(type="return", label=f"return {self.visit(node.value).label}", children=[])
+            if node.value is None:
+                label = "return"
+            elif isinstance(node.value, ast.Tuple):
+                elements = ", ".join(self.visit(elt).label for elt in node.value.elts)
+                label = f"return {elements}"
+            else:
+                label = f"return {self.visit(node.value).label}"
+            return Node(type="return", label=label, children=[])
 
         elif isinstance(node, ast.Assign):
             targets = ", ".join(self.visit(t).label for t in node.targets)
